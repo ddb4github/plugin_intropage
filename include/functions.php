@@ -1521,38 +1521,57 @@ function intropage_addpanel_select($dashboard_id) {
 }
 
 function ntp_time($host) {
+	global $config;
+	
 	$timestamp = -1;
+    // create a UDP socket
 	$sock      = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+    if (!$sock) {
+        return 'error: socket_create failed:' . socket_strerror(socket_last_error($sock));
+    }
 
-	$timeout = array('sec' => 1, 'usec' => 400000);
-	socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, $timeout);
-	socket_clear_error();
+    // set a timeout of 5 second
+    $timeout = array('sec' => 5, 'usec' => 0);
+    socket_set_option($sock, SOL_SOCKET, SO_RCVTIMEO, $timeout);
 
-	socket_connect($sock, $host, 123);
-	if (socket_last_error() == 0) {
-		// Send request
-		$msg = "\010" . str_repeat("\0", 47);
-		socket_send($sock, $msg, strlen($msg), 0);
-		// Receive response and close socket
+    // clear any existing error
+    socket_clear_error();
 
-		if (@socket_recv($sock, $recv, 48, MSG_WAITALL)) {
-			socket_close($sock);
-			// Interpret response
-			$data      = unpack('N12', $recv);
-			$timestamp = sprintf('%u', $data[9]);
-			// NTP is number of seconds since 0000 UT on 1 January 1900
-			// Unix time is seconds since 0000 UT on 1 January 1970
-			$timestamp -= 2208988800;
-		} else {
-		    $timestamp = 'error';
+    // connect to the NTP server
+    if (!socket_connect($sock, $host, 123)) {
+        return 'error: socket_connect failed:' . socket_strerror(socket_last_error($sock));
+    }
+
+    // send an NTP request to the server
+    $request = "\x1b" . str_repeat("\x00", 47);
+    if (socket_sendto($sock, $request, strlen($request), 0, $host, 123) === false) {
+        return 'error: socket_sendto failed:' . socket_strerror(socket_last_error($sock));
+    }
+    // receive the NTP response from the server
+	$recv='';
+	if ($config['cacti_server_os'] == 'win32'){
+		if (socket_recv($sock, $recv, 48, MSG_PEEK) === false) {
+			return 'error: socket_recv failed: ' . socket_strerror(socket_last_error($sock));
 		}
 	} else {
-	    $timestamp = 'error';
-	}
+		if (socket_recv($sock, $recv, 48, MSG_WAITALL) === false) {
+			return 'error: socket_recv failed: ' . socket_strerror(socket_last_error($sock));
+		}
+	}	
+    // extract the timestamp from the received data
+    $data = unpack('N12', $recv);
+    $timestamp = sprintf('%u', $data[9]);
 
+    // close the socket
+    socket_close($sock);
+
+    // NTP is number of seconds since 0000 UT on 1 January 1900
+    // Unix time is seconds since 0000 UT on 1 January 1970
+    $timestamp -= 2208988800;
+
+    //return ($timestamp . ' | ' . date('U'));
 	return ($timestamp);
 }
-
 function intropage_graph_button($data) {
 	global $config, $login_opts;
 

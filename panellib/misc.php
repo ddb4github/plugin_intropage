@@ -96,7 +96,7 @@ function register_misc() {
 			'update_func'  => 'servcheck',
 			'details_func' => 'servcheck_detail',
 			'trends_func'  => false
-		),
+		)
 	);
 
 	return $panels;
@@ -126,10 +126,10 @@ function ntp_dns($panel, $user_id) {
 			$timestamp = ntp_time($ntp_server);
 		}
 
-		if ($timestamp != 'error') {
+		if (substr($timestamp, 1, 5) != 'error') {
 			$diff_time = date('U') - $timestamp;
 
-			$panel['data'] .= '<tr><td><span class="txt_big">' . date('Y-m-d H:i:s') . '</span></td></tr>';
+			$panel['data'] .= '<tr><td><span class="txt_big">' . date('Y-m-d H:i:s') . ' (Time Diff: ' . $diff_time . ')</span></td></tr>';
 
 			if ($diff_time > 1400000000) {
 				$panel['alarm'] = 'red';
@@ -149,7 +149,9 @@ function ntp_dns($panel, $user_id) {
 		} else {
 			$panel['alarm'] = 'red';
 			$panel['data']  .= '<tr><td>' . __('Unable to contact the NTP server indicated.', 'intropage') . '</td></tr>';
-			$panel['data']  .= '<tr><td>' . $ntp_server . '</td></tr>';
+			$panel['data']  .= '<tr><td>' . 'Server: ' . $ntp_server . '</td></tr>';
+
+			$panel['data']  .= '<tr><td>' . 'Timestamp: ' . $timestamp . '</td></tr>';
 			$panel['data']  .= '<tr><td>' . __('Please check your configuration.', 'intropage') . '</td></tr>';
 		}
 	}

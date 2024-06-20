@@ -569,10 +569,11 @@ function graph_host_detail() {
 	}
 
 	// disabled
+
 	$h = db_fetch_assoc("SELECT id, description, status_fail_date
 		FROM host
-		WHERE $q_host cond
-		AND disabled = 'on'");
+		WHERE disabled = 'on'
+		 $q_host_cond ");
 
 	$panel['detail'] .= '<tr class="' . $s['class'] . '"><td class="left" colspan="2">';
 
