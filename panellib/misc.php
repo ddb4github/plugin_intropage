@@ -119,14 +119,23 @@ function ntp_dns($panel, $user_id) {
 		$panel['alarm'] = 'red';
 		$panel['data']  .= '<tr><td>' . __('Wrong NTP server configured - %s<br/>Please fix it in settings', $ntp_server, 'intropage') . '<span class="inpa_sq color_red"></span></td></tr>';
 	} else {
-		$timestamp = ntp_time($ntp_server);
+		$i = 0;
 
-		// try again
-		if ($timestamp == 'error') {
+		while (true) {
 			$timestamp = ntp_time($ntp_server);
+			if (is_numeric($timestamp)) {
+				break;
+			} else {
+				$i++;
+			}
+
+			if ($i > 2) {
+				$timestamp = 'error';
+				break;
+			}
 		}
 
-		if (substr($timestamp, 1, 5) != 'error') {
+		if ($timestamp != 'error') {
 			$diff_time = date('U') - $timestamp;
 
 			$panel['data'] .= '<tr><td><span class="txt_big">' . date('Y-m-d H:i:s') . ' (Time Diff: ' . $diff_time . ')</span></td></tr>';
